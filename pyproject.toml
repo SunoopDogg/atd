@@ -1,8 +1,26 @@
 [project]
-name = "kkalssam-python-template"
+name = "atd"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
+    "addict>=2.4.0",
+    "future>=1.0.0",
+    "joblib>=1.5.3",
+    "lmdb>=2.2.0",
+    "natsort>=8.4.0",
+    "numpy==1.26.4",
+    "opencv-python>=4.11.0.86",
+    "pillow>=12.1.1",
+    "pyiqa>=0.1.15.post2",
+    "pyyaml>=6.0.3",
+    "requests>=2.33.0",
+    "scikit-image>=0.26.0",
+    "scipy>=1.17.1",
+    "torch==2.7.0",
+    "torchvision>=0.22.0",
+    "tqdm>=4.67.3",
+    "wandb>=0.25.1",
+    "yapf>=0.43.0",
 ]
