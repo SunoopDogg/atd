@@ -1,3 +1,4 @@
+import csv
 import torch
 from collections import OrderedDict
 from os import path as osp
@@ -202,6 +203,7 @@ class SRModel(BaseModel):
         # zero self.metric_results
         if with_metrics:
             self.metric_results = {metric: 0 for metric in self.metric_results}
+            per_image_results = []
 
         metric_data = dict()
         if use_pbar:
@@ -236,11 +238,15 @@ class SRModel(BaseModel):
 
             if with_metrics:
                 # calculate metrics
+                image_metrics = {'img_name': img_name}
                 for name, opt_ in self.opt['val']['metrics'].items():
                     if "psnr" in name or "ssim" in name:
-                        self.metric_results[name] += calculate_metric(metric_data, opt_)
+                        metric_val = calculate_metric(metric_data, opt_)
                     else:
-                        self.metric_results[name] += self.metric[name](self.output.clamp(0, 1), self.gt).item()
+                        metric_val = self.metric[name](self.output.clamp(0, 1), self.gt).item()
+                    self.metric_results[name] += metric_val
+                    image_metrics[name] = metric_val
+                per_image_results.append(image_metrics)
                         
             if 'gt' in visuals:
                 del self.gt
@@ -260,6 +266,21 @@ class SRModel(BaseModel):
                 self._update_best_metric_result(dataset_name, metric, self.metric_results[metric], current_iter)
 
             self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
+
+            # save per-image metrics to CSV
+            if per_image_results:
+                csv_path = osp.join(self.opt['path']['log'], f'{dataset_name}_{current_iter}_metrics.csv')
+                metric_names = [k for k in per_image_results[0] if k != 'img_name']
+                logger = get_root_logger()
+                try:
+                    with open(csv_path, 'w', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(['img_name'] + metric_names)
+                        for row in per_image_results:
+                            writer.writerow([row['img_name']] + [f'{row[m]:.6f}' for m in metric_names])
+                    logger.info(f'Per-image metrics saved to {csv_path}')
+                except OSError as e:
+                    logger.warning(f'Failed to save per-image metrics CSV: {e}')
 
     def _log_validation_metric_values(self, current_iter, dataset_name, tb_logger):
         log_str = f'Validation {dataset_name}\n'
